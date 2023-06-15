@@ -24,17 +24,20 @@ struct Node {
     T value;
     shared_ptr<Node> left;
     shared_ptr<Node> right;
-    shared_ptr<Node> parent;
+    weak_ptr<Node> parent;
 
     int height;
 
     explicit Node(T value) : value(value), left(nullptr), right(nullptr), parent(nullptr), height(1) {};
+    Node(T value, shared_ptr<Node> parent) : value(value), left(nullptr), right(nullptr), parent(parent), height(1) {};
+    ~Node() = default;
 };
 
 template<typename T, class Comparator = RawComparator>
 class AVLTree {
 private:
     typedef shared_ptr<Node<T>> NodePtr;
+    typedef weak_ptr<Node<T>> NodeWeakPtr;
     Comparator comparator = Comparator();
     NodePtr root;
 public:
@@ -68,15 +71,16 @@ public:
         return getHeight(root);
     }
 private:
-    void insert(NodePtr &node, T value) {
+    void insert(NodePtr &node, NodeWeakPtr parent, T value) {
         if (node == nullptr) {
-            node = make_shared<Node<T>>(value);
+            node = make_shared<Node>(value);
+            node->parent = parent;
             return;
         }
         if (comparator(value, node->value)) {
-            insert(node->left, value);
+            insert(node->left, node, value);
         } else if (comparator(node->value, value)) {
-            insert(node->right, value);
+            insert(node->right, node, value);
         } else {
             return;
         }
@@ -218,8 +222,7 @@ private:
         node->parent = left;
         node->height = max(getHeight(node->left), getHeight(node->right)) + 1;
         left->height = max(getHeight(left->left), getHeight(left->right)) + 1;
-    }
-};
+    }};
 
 
 #endif //AVL_TREE_LIBRARY_H
